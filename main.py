@@ -3,6 +3,15 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
+import time
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+# for set chrome path
+import chromedriver_binary
 
 
 # def get_star(url, headers):
@@ -42,14 +51,23 @@ def get_star(url, headers):
 
 
 def get_star_from_personal_page(url, headers):
-    res = requests.get(url, timeout=1, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
-    f = open("./test.log", mode='w')
-    f.write(str(soup))
-    f.close()
-    review_list = soup.find('div', class_='a-section')
-    print(review_list)
+    # set options
+    options = Options()
+    options.set_headless(True)
+    driver = webdriver.Chrome(chrome_options=options)
 
+    driver.get(url)
+
+    try:
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "profile-at-card-container")))
+    finally:
+        html = driver.page_source.encode('utf-8')
+        soup = BeautifulSoup(html, "html.parser")
+
+    review_list = soup.find('div', id='profile-at-card-container')
+    f = open("./test.log", mode='w')
+    f.write(str(review_list))
+    f.close()
 
     if review_list is None:
         return None
@@ -59,10 +77,6 @@ def get_star_from_personal_page(url, headers):
 
         if star_and_item_name is not None:
             print(star_and_item_name)
-
-
-def clawl_review():
-    pass
 
 
 def count_stars():
