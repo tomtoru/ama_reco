@@ -57,17 +57,14 @@ def get_star_from_personal_page(url, headers):
     driver = webdriver.Chrome(chrome_options=options)
 
     driver.get(url)
-
     try:
+        # wait until drew review block
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "profile-at-card-container")))
     finally:
         html = driver.page_source.encode('utf-8')
         soup = BeautifulSoup(html, "html.parser")
 
     review_list = soup.find('div', id='profile-at-card-container')
-    f = open("./test.log", mode='w')
-    f.write(str(review_list))
-    f.close()
 
     if review_list is None:
         return None
