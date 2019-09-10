@@ -43,7 +43,7 @@ class Review():
 
     def get_star(self):
         # get item page html
-        res = requests.get(self.item_url, timeout=1, headers=self.headers)
+        res = requests.get(self.item_url, timeout=1, headers=self.header)
         soup = BeautifulSoup(res.text, "html.parser")
 
         # get review from item page
@@ -82,7 +82,6 @@ class Review():
             item_name_and_star = review.find('div', class_="a-section profile-at-product-title-container profile-at-product-box-element")
 
             if item_name_and_star is not None:
-                item_name_and_star_dict[item_name_and_star.find()]
 
                 print(item_name_and_star)
 

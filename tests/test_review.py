@@ -3,7 +3,7 @@
 import unittest
 from recomend.review import Review
 
-class TestReview():
+class TestReview(unittest.TestCase):
 
     def setUp(self):
         # TODO
