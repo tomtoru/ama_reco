@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
-import time
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -17,9 +15,10 @@ import chromedriver_binary
 
 
 class Review():
-    def __init__(self, item_url, header):
+    def __init__(self, item_url, headers):
         self.item_url = item_url
-        self.header = header
+        self.headers = headers
+        self.aggregation_stars = {}
 
 
     # def get_star(url, headers):
@@ -43,7 +42,7 @@ class Review():
 
     def get_star(self):
         # get item page html
-        res = requests.get(self.item_url, timeout=1, headers=self.header)
+        res = requests.get(self.item_url, timeout=1, headers=self.headers)
         soup = BeautifulSoup(res.text, "html.parser")
 
         # get review from item page
@@ -77,15 +76,16 @@ class Review():
         if review_list is None:
             return None
 
-        item_name_and_star_dict = {}
         for review in review_list:
-            item_name_and_star = review.find('div', class_="a-section profile-at-product-title-container profile-at-product-box-element")
+            name_and_star = review.find('div', class_="a-section profile-at-product-title-container profile-at-product-box-element")
 
-            if item_name_and_star is not None:
+            if name_and_star is not None:
+                name = name_and_star.find('span').find('span').string
+                star = name_and_star.find('span', class_='a-icon-alt').string
+                star_float = float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1])
+                if name in self.aggregation_stars:
+                    self.aggregation_stars[name] += star_float
+                else:
+                    self.aggregation_stars[name] = star_float
 
-                print(item_name_and_star)
-
-
-    def count_stars(self):
-        pass
 
