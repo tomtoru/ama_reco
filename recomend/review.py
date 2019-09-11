@@ -20,7 +20,6 @@ class Review():
         self.headers = headers
         self.aggregation_stars = {}
 
-
     # def get_star(url, headers):
     #     res = requests.get(url, timeout=1, headers=headers)
     #     soup = BeautifulSoup(res.text, "html.parser")
@@ -54,8 +53,7 @@ class Review():
             if personal_page_url is not None:
                 self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
 
-        return None
-
+        print("--finish!--")
 
     def get_star_from_personal_page(self, personal_url):
         # set options
@@ -77,15 +75,16 @@ class Review():
             return None
 
         for review in review_list:
-            name_and_star = review.find('div', class_="a-section profile-at-product-title-container profile-at-product-box-element")
+            name_element = review.find('div',
+                                       class_='a-section profile-at-product-title-container profile-at-product-box-element')
+            star_element = review.find('div', class_='a-row a-spacing-mini')
 
-            if name_and_star is not None:
-                name = name_and_star.find('span').find('span').string
-                star = name_and_star.find('span', class_='a-icon-alt').string
+            if name_element is not None and star_element is not None:
+                name = name_element.find('span').find('span').string
+                star = star_element.find('span', class_='a-icon-alt').string
+                # star: 「星5つのうち{int or float}」
                 star_float = float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1])
                 if name in self.aggregation_stars:
                     self.aggregation_stars[name] += star_float
                 else:
                     self.aggregation_stars[name] = star_float
-
-
