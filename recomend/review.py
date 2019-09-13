@@ -15,29 +15,11 @@ import chromedriver_binary
 
 
 class Review():
-    def __init__(self, item_url, headers):
+    def __init__(self, item_url, headers, star_filter=4.0):
         self.item_url = item_url
         self.headers = headers
         self.aggregation_stars = {}
-
-    # def get_star(url, headers):
-    #     res = requests.get(url, timeout=1, headers=headers)
-    #     soup = BeautifulSoup(res.text, "html.parser")
-    #     elem_list = soup.find('div', class_="a-section review-views celwidget")
-    #
-    #     star_list = []
-    #     for elem in elem_list:
-    #         review = elem.select('span.a-icon-alt')
-    #         if review is not None:
-    #             star = float(re.findall('[0-9]+\.[0-9]', review[0].text)[0])
-    #             star_list.append(star)
-    #
-    #     star_count = 0.0
-    #     for s in star_list:
-    #         star_count += s
-    #
-    #     return star_count
-
+        self.star_filter = star_filter
 
     def get_star(self):
         # get item page html
@@ -48,8 +30,13 @@ class Review():
         review_list = soup.find('div', class_='a-section review-views celwidget')
 
         for review in review_list:
-            personal_page_url = review.find('a', class_="a-profile")['href']
+            # filter by star count
+            star = review.find('span', class_='a-icon-alt').string
+            if float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1]) < self.star_filter:
+                continue
 
+            # check reviewer's personal page
+            personal_page_url = review.find('a', class_="a-profile")['href']
             if personal_page_url is not None:
                 self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
 
@@ -62,6 +49,7 @@ class Review():
         driver = webdriver.Chrome(chrome_options=options)
 
         driver.get(personal_url)
+        # TODO take measure to JS Scrolling
         try:
             # wait until drew review block
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "profile-at-card-container")))
@@ -88,3 +76,7 @@ class Review():
                     self.aggregation_stars[name] += star_float
                 else:
                     self.aggregation_stars[name] = star_float
+
+    def organize_aggregation(self):
+        # TODO to sort aggregation and to make output
+        pass
