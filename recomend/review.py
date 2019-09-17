@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
 import time
+import logging
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -23,13 +24,15 @@ class Review():
         self.star_filter = star_filter
 
     def get_star(self):
+        start = time.time()
+        logging.debug(':::::start')
         # get item page html
         res = requests.get(self.item_url, timeout=1, headers=self.headers)
         soup = BeautifulSoup(res.text, "html.parser")
 
         # get review from item page
         review_list = soup.find('div', class_='a-section review-views celwidget')
-
+        logging.debug(':::::get {0} review'.format(len(review_list)))
         for review in review_list:
             # filter by star count
             star = review.find('span', class_='a-icon-alt').string
@@ -41,7 +44,8 @@ class Review():
             if personal_page_url is not None:
                 self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
 
-        print("--finish!--")
+        logging.debug(':::::finish')
+        logging.debug(':::::time [ {0} ]'.format(time.time() - start))
 
     def get_star_from_personal_page(self, personal_url):
         # set options
