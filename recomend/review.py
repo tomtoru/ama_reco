@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
+import time
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -49,14 +50,24 @@ class Review():
         driver = webdriver.Chrome(chrome_options=options)
 
         driver.get(personal_url)
-        # TODO take measure to JS Scrolling
         try:
             # wait until drew review block
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "profile-at-card-container")))
         finally:
-            html = driver.page_source.encode('utf-8')
-            soup = BeautifulSoup(html, "html.parser")
+            html = driver.page_source
 
+        while True:
+            # TODO should improve
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(3)
+            current_html = driver.page_source
+
+            if html == current_html:
+                break
+            else:
+                html = current_html
+
+        soup = BeautifulSoup(html.encode('utf-8'), "html.parser")
         review_list = soup.find('div', id='profile-at-card-container')
 
         if review_list is None:
