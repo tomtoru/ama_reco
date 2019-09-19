@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 import re
 import time
 import logging
+import datetime
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -22,10 +23,13 @@ class Review():
         self.headers = headers
         self.aggregation_stars = {}
         self.star_filter = star_filter
+        self.now_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.result_dir = './recomend/result/'
 
     def get_star(self):
         start = time.time()
         logging.debug(':::::start')
+
         # get item page html
         res = requests.get(self.item_url, timeout=1, headers=self.headers)
         soup = BeautifulSoup(res.text, "html.parser")
@@ -44,6 +48,15 @@ class Review():
             if personal_page_url is not None:
                 self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
 
+        self.organize_aggregation()
+
+        # detail of result save
+        # TODO: check and make dir
+        # TODO: define method
+        result_log = self.result_dir + 'result_{0}.txt'.format(self.now_datetime)
+        with open(result_log, 'w') as f:
+            f.write(str(self.aggregation_stars))
+
         logging.debug(':::::finish')
         logging.debug(':::::time [ {0} ]'.format(time.time() - start))
 
@@ -61,7 +74,7 @@ class Review():
             html = driver.page_source
 
         while True:
-            # TODO should improve
+            # TODO: should improve
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(3)
             current_html = driver.page_source
@@ -78,6 +91,7 @@ class Review():
             return None
 
         for review in review_list:
+            # TODO: to exclude base item from aggregation
             name_element = review.find('div',
                                        class_='a-section profile-at-product-title-container profile-at-product-box-element')
             star_element = review.find('div', class_='a-row a-spacing-mini')
@@ -93,5 +107,5 @@ class Review():
                     self.aggregation_stars[name] = star_float
 
     def organize_aggregation(self):
-        # TODO to sort aggregation and to make output
-        pass
+        self.aggregation_stars = sorted(self.aggregation_stars.items(), key=lambda x: x[1])
+        # TODO: make result for output
