@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
+import os
 import time
 import logging
 import datetime
@@ -50,9 +51,10 @@ class Review():
 
         self.organize_aggregation()
 
+        # result dir check
+        if not os.path.isdir(self.result_dir):
+            os.makedirs(self.result_dir)
         # detail of result save
-        # TODO: check and make dir
-        # TODO: define method
         result_log = self.result_dir + 'result_{0}.txt'.format(self.now_datetime)
         with open(result_log, 'w') as f:
             f.write(str(self.aggregation_stars))
