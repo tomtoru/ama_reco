@@ -20,10 +20,11 @@ import chromedriver_binary
 
 class Review():
     def __init__(self, item_url, headers, star_filter=4.0):
+        # TODO add regular expression for url
         self.item_url = item_url
         self.headers = headers
-        self.aggregation_stars = {}
         self.star_filter = star_filter
+        self.aggregation_stars = {}
         self.now_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.result_dir = './recomend/result/'
 
@@ -100,6 +101,12 @@ class Review():
 
             if name_element is not None and star_element is not None:
                 name = name_element.find('span').find('span').string
+                if name is None:
+                    # TODO check why sometimes get "None"...?
+                    continue
+                # exclude volume number for series items
+                name = re.sub(r"\d*", "", name)
+
                 star = star_element.find('span', class_='a-icon-alt').string
                 # star: 「星5つのうち{int or float}」
                 star_float = float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1])
