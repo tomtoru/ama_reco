@@ -20,8 +20,8 @@ import chromedriver_binary
 
 class Review():
     def __init__(self, item_url, headers, star_filter=4.0):
-        # TODO add regular expression for url
-        self.item_url = item_url
+        # exclude parameter
+        self.item_url = re.search(r"https://.+/.+/.+/", item_url).group()
         self.headers = headers
         self.star_filter = star_filter
         self.aggregation_stars = {}
