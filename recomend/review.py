@@ -21,7 +21,7 @@ import chromedriver_binary
 class Review():
     def __init__(self, item_url, headers, star_filter=4.0):
         # exclude parameter
-        self.item_url = re.search(r"https://.+/.+/.+/", item_url).group()
+        self.item_url = re.search(r"https://.+?/.+?/dp/[a-zA-Z0-9]+", item_url).group()
         self.headers = headers
         self.star_filter = star_filter
         self.aggregation_stars = {}
@@ -36,13 +36,41 @@ class Review():
         res = requests.get(self.item_url, timeout=1, headers=self.headers)
         soup = BeautifulSoup(res.text, "html.parser")
 
+        # get all review page html
+        all_review_url = soup.find("a", attrs={"data-hook": "see-all-reviews-link-foot"}).attrs["href"]
+        res_all_review = requests.get(urljoin(self.item_url, all_review_url), timeout=1, headers=self.headers)
+        soup_res_all_review = BeautifulSoup(res_all_review.text, "html.parser")
+
+        # while True:
+        #     res_all_review = requests.get(urljoin(self.item_url, all_review_url), timeout=1, headers=self.headers)
+        #     soup_all_review = BeautifulSoup(res_all_review.text, "html.parser")
+        #     soup_res_all_review_list.append(soup_all_review)
+        #
+        #     soup_pagination = soup_all_review.find("ul", _class="a-pagination")
+        #     print(soup_all_review)
+        #     print(soup_pagination)
+        #     if soup_pagination is None:
+        #         break
+        #     elif soup_pagination.find("li", _class="a-last") is None:
+        #         break
+        #     else:
+        #         print("hey!!!")
+        #         all_review_url = soup_pagination.find("li", _class="a-last").find("a", recursive=False)["href"]
+        #
+        # print(len(soup_res_all_review_list))
+        # exit()
+
         # get review from item page
-        review_list = soup.find('div', class_='a-section review-views celwidget')
+        review_list = soup_res_all_review.find("div", id="cm_cr-review_list")
         logging.debug(':::::get {0} review'.format(len(review_list)))
         for review in review_list:
+            # TODO check why sometimes get "None"...?
+            if review.find('span', class_='a-icon-alt') is None:
+                continue
+
             # filter by star count
             star = review.find('span', class_='a-icon-alt').string
-            if float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1]) < self.star_filter:
+            if float(re.findall('[0-9]\.[0-9]', star)[0]) < self.star_filter:
                 continue
 
             # check reviewer's personal page
@@ -77,7 +105,6 @@ class Review():
             html = driver.page_source
 
         while True:
-            # TODO: should improve
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(3)
             current_html = driver.page_source
@@ -93,6 +120,8 @@ class Review():
         if review_list is None:
             return None
 
+        tmp_aggregation_stars = {}
+        duplicate_count = {}
         for review in review_list:
             # TODO: to exclude base item from aggregation
             name_element = review.find('div',
@@ -110,11 +139,19 @@ class Review():
                 star = star_element.find('span', class_='a-icon-alt').string
                 # star: 「星5つのうち{int or float}」
                 star_float = float(re.findall('[0-9]|[0-9]+\.[0-9]', star)[1])
-                if name in self.aggregation_stars:
-                    self.aggregation_stars[name] += star_float
+                if name in tmp_aggregation_stars:
+                    tmp_aggregation_stars[name] += star_float
+                    duplicate_count[name] += 1
                 else:
-                    self.aggregation_stars[name] = star_float
+                    tmp_aggregation_stars[name] = star_float
+                    duplicate_count[name] = 1
+
+        for name, star in tmp_aggregation_stars.items():
+            if name in self.aggregation_stars:
+                self.aggregation_stars[name] += star / float(duplicate_count[name])
+            else:
+                self.aggregation_stars[name] = star / float(duplicate_count[name])
 
     def organize_aggregation(self):
-        self.aggregation_stars = sorted(self.aggregation_stars.items(), key=lambda x: x[1])
+        self.aggregation_stars = sorted(self.aggregation_stars.items(), reverse=True, key=lambda x: x[1])
         # TODO: make result for output
