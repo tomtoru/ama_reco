@@ -38,45 +38,41 @@ class Review():
 
         # get all review page html
         all_review_url = soup.find("a", attrs={"data-hook": "see-all-reviews-link-foot"}).attrs["href"]
-        res_all_review = requests.get(urljoin(self.item_url, all_review_url), timeout=1, headers=self.headers)
-        soup_res_all_review = BeautifulSoup(res_all_review.text, "html.parser")
+        soup_res_all_review_list = []
+        while True:
+            res_all_review = requests.get(urljoin(self.item_url, all_review_url), timeout=1, headers=self.headers)
+            soup_all_review = BeautifulSoup(res_all_review.text, "html.parser")
+            soup_res_all_review_list.append(soup_all_review)
 
-        # while True:
-        #     res_all_review = requests.get(urljoin(self.item_url, all_review_url), timeout=1, headers=self.headers)
-        #     soup_all_review = BeautifulSoup(res_all_review.text, "html.parser")
-        #     soup_res_all_review_list.append(soup_all_review)
-        #
-        #     soup_pagination = soup_all_review.find("ul", _class="a-pagination")
-        #     print(soup_all_review)
-        #     print(soup_pagination)
-        #     if soup_pagination is None:
-        #         break
-        #     elif soup_pagination.find("li", _class="a-last") is None:
-        #         break
-        #     else:
-        #         print("hey!!!")
-        #         all_review_url = soup_pagination.find("li", _class="a-last").find("a", recursive=False)["href"]
-        #
-        # print(len(soup_res_all_review_list))
-        # exit()
+            soup_pagination = soup_all_review.find("ul", class_="a-pagination")
+            if soup_pagination is None:
+                break
+            elif soup_pagination.find("li", class_="a-last") is None:
+                break
+            elif soup_pagination.find("li", class_="a-last").find("a", recursive=False) is None:
+                break
+            else:
+                all_review_url = soup_pagination.find("li", class_="a-last").find("a", recursive=False)["href"]
+
 
         # get review from item page
-        review_list = soup_res_all_review.find("div", id="cm_cr-review_list")
-        logging.debug(':::::get {0} review'.format(len(review_list)))
-        for review in review_list:
-            # TODO check why sometimes get "None"...?
-            if review.find('span', class_='a-icon-alt') is None:
-                continue
+        for soup_res_all_review in soup_res_all_review_list:
+            review_list = soup_res_all_review.find("div", id="cm_cr-review_list")
+            logging.debug(':::::get {0} review'.format(len(review_list)))
+            for review in review_list:
+                # TODO check why sometimes get "None"...?
+                if review.find('span', class_='a-icon-alt') is None:
+                    continue
 
-            # filter by star count
-            star = review.find('span', class_='a-icon-alt').string
-            if float(re.findall('[0-9]\.[0-9]', star)[0]) < self.star_filter:
-                continue
+                # filter by star count
+                star = review.find('span', class_='a-icon-alt').string
+                if float(re.findall('[0-9]\.[0-9]', star)[0]) < self.star_filter:
+                    continue
 
-            # check reviewer's personal page
-            personal_page_url = review.find('a', class_="a-profile")['href']
-            if personal_page_url is not None:
-                self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
+                # check reviewer's personal page
+                personal_page_url = review.find('a', class_="a-profile")['href']
+                if personal_page_url is not None:
+                    self.get_star_from_personal_page(urljoin(self.item_url, personal_page_url))
 
         self.organize_aggregation()
 
